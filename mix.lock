@@ -1,0 +1,2 @@
+%{"elixir_make": {:hex, :elixir_make, "0.3.0", "285147fa943806eee82f6680b7b446b5569bcf3ee8328fa0a7c200ffc44fbaba", [:mix], []},
+  "nerves_uart": {:hex, :nerves_uart, "0.1.0", "e5358d467c3022e568bd5a41adc9aa5f231d1ae825c9883dd87322e6f38398ea", [:mix, :make], [{:elixir_make, "~> 0.3", [hex: :elixir_make, optional: false]}]}}
