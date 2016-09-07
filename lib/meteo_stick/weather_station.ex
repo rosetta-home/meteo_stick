@@ -9,11 +9,15 @@ defmodule MeteoStick.WeatherStation do
             pressure: 0,
             wind: %{
                 speed: 0,
-                direction: 0
+                direction: 0,
+                gust: 0
             },
             rain: 0,
             uv: 0,
-            solar: %{radiation: 0 }
+            solar: %{
+                radiation: 0,
+                intensity: 0
+            }
     end
 
     def start_link(data) do
@@ -32,10 +36,10 @@ defmodule MeteoStick.WeatherStation do
     end
 
     def handle_call({"W", values}, _from, state) do
-        [id, wind_speed, _other, wind_direction, rf_signal] = values
+        [id, wind_speed, gust, wind_direction, rf_signal] = values
         Logger.debug("Wind Speed: #{inspect wind_speed}")
         Logger.debug("#{inspect values}")
-        state = %State{state | :wind => %{state.wind | speed: wind_speed, direction: wind_direction}}
+        state = %State{state | wind: %{state.wind | speed: wind_speed, direction: wind_direction, gust: gust}}
         GenEvent.notify(MeteoStick.Events, state)
         {:reply, :ok, state}
     end
@@ -43,7 +47,7 @@ defmodule MeteoStick.WeatherStation do
     def handle_call({"R", values}, _from, state) do
         [id, tick, rf_signal] = values
         Logger.debug("Rain: #{inspect tick}")
-        state = %State{state | :rain => tick}
+        state = %State{state | rain: tick}
         GenEvent.notify(MeteoStick.Events, state)
         {:reply, :ok, state}
     end
@@ -51,7 +55,7 @@ defmodule MeteoStick.WeatherStation do
     def handle_call({"T", values}, _from, state) do
         [id, temp_c, humidity, rf_signal] = values
         Logger.debug("Temperature: #{inspect temp_c}")
-        state = %State{state | :outdoor_temperature => temp_c, :humidity => humidity}
+        state = %State{state | outdoor_temperature: temp_c, humidity: humidity}
         GenEvent.notify(MeteoStick.Events, state)
         {:reply, :ok, state}
     end
@@ -65,10 +69,10 @@ defmodule MeteoStick.WeatherStation do
     end
 
     def handle_call({"S", values}, _from, state) do
-        [id, solar_radiation, _other, rf_signal] = values
+        [id, solar_radiation, intensity, rf_signal] = values
         Logger.debug("Solar Radiation: #{inspect solar_radiation}")
         Logger.debug("#{inspect values}")
-        state = %State{state | :solar => %{state.solar | :radiation => solar_radiation}}
+        state = %State{state | :solar => %{state.solar | radiation: solar_radiation, intensity: intensity}}
         GenEvent.notify(MeteoStick.Events, state)
         {:reply, :ok, state}
     end
@@ -76,7 +80,7 @@ defmodule MeteoStick.WeatherStation do
     def handle_call({"B", values}, _from, state) do
         [temp_c, pressure, good_packets] = values
         Logger.debug("Indoor Temperature: #{inspect temp_c}")
-        state = %State{state | :indoor_temperature => temp_c, :pressure => pressure}
+        state = %State{state | indoor_temperature: temp_c, pressure: pressure}
         GenEvent.notify(MeteoStick.Events, state)
         {:reply, :ok, state}
     end
