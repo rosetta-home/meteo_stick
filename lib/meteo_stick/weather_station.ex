@@ -3,7 +3,8 @@ defmodule MeteoStick.WeatherStation do
     require Logger
 
     defmodule State do
-        defstruct outdoor_temperature: 0,
+        defstruct id: 0,
+            outdoor_temperature: 0,
             indoor_temperature: 0,
             humidity: 0,
             pressure: 0,
@@ -32,7 +33,7 @@ defmodule MeteoStick.WeatherStation do
     end
 
     def init(data) do
-        {:ok, %State{}}
+        {:ok, %State{id: Enum.at(data, 1)}}
     end
 
     def handle_call({"W", values}, _from, state) do
