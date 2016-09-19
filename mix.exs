@@ -7,34 +7,42 @@ defmodule MeteoStick.Mixfile do
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     description: description(),
+     package: package(),
      deps: deps()]
   end
 
-  # Configuration for the OTP application
-  #
-  # Type "mix help compile.app" for more information
   def application do
     [
-        applications: [:logger, :nerves_uart],
-        mod: {MeteoStick, []},
-        env: [speed: 115200,
-            tty: "/dev/ttyUSB0",
-        ]
+      applications: [:logger, :nerves_uart],
+      mod: {MeteoStick, []},
+      env: [speed: 115200,
+          tty: "/dev/ttyUSB0",
+      ]
     ]
   end
 
-  # Dependencies can be Hex packages:
-  #
-  #   {:mydep, "~> 0.3.0"}
-  #
-  # Or git/path repositories:
-  #
-  #   {:mydep, git: "https://github.com/elixir-lang/mydep.git", tag: "0.1.0"}
-  #
-  # Type "mix help deps" for more examples and options
+  def description do
+    """
+    A Client for the Rainforest Automation Raven USB SMCD (Smart Meter Connected Device)
+    """
+  end
+
+  def package do
+    [
+      name: :raven_smcd,
+      files: ["lib", "mix.exs", "README*", "LICENSE*"],
+      maintainers: ["Christopher Steven Coté"],
+      licenses: ["MIT License"],
+      links: %{"GitHub" => "https://github.com/NationalAssociationOfRealtors/raven",
+        "Docs" => "https://github.com/NationalAssociationOfRealtors/raven"}
+    ]
+  end
+
   defp deps do
     [
-        {:nerves_uart, "~> 0.1.0"},
+      {:nerves_uart, "~> 0.1.1"},
+      {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
 end
