@@ -24,18 +24,18 @@ defmodule MeteoStick.Mixfile do
 
   def description do
     """
-    A Client for the Rainforest Automation Raven USB SMCD (Smart Meter Connected Device)
+    A Client for the MeteoStick USB Stick
     """
   end
 
   def package do
     [
-      name: :raven_smcd,
+      name: :meteo_stick,
       files: ["lib", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Christopher Steven Coté"],
-      licenses: ["MIT License"],
-      links: %{"GitHub" => "https://github.com/NationalAssociationOfRealtors/raven",
-        "Docs" => "https://github.com/NationalAssociationOfRealtors/raven"}
+      licenses: ["Apache License 2.0"],
+      links: %{"GitHub" => "https://github.com/NationalAssociationOfRealtors/meteo_stick",
+        "Docs" => "https://github.com/NationalAssociationOfRealtors/meteo_stick"}
     ]
   end
 
