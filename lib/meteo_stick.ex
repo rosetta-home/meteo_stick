@@ -14,7 +14,11 @@ defmodule MeteoStick do
       case Map.get(device, :product_id, 0) do
         24577 ->
           Logger.info("Setting Meteo TTY: #{inspect tty}")
-          Application.put_env(:meteo_stick, :tty, "/dev/#{tty}", persistent: true)
+          tty = case String.starts_with?(tty, "/dev") do
+            true -> tty
+            false -> "/dev/#{tty}"
+          end
+          Application.put_env(:meteo_stick, :tty, tty, persistent: true)
         _ -> nil
       end
     end)
