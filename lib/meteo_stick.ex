@@ -10,7 +10,8 @@ defmodule MeteoStick do
 
   def get_tty do
     Serial.enumerate |> Enum.each(fn({tty, device}) ->
-      case device.product_id do
+      Logger.info("#{inspect device}")
+      case Map.get(device, :product_id, 0) do
         24577 ->
           Logger.info("Setting Meteo TTY: #{inspect tty}")
           Application.put_env(:meteo_stick, :tty, "/dev/#{tty}", persistent: true)
