@@ -56,7 +56,7 @@ defmodule MeteoStick.Client do
 
     def handle_data(data, state) do
         parts = String.split(data, " ")
-        id = String.to_atom(Enum.at(parts, 1))
+        id = :"MeteoStation-#{Enum.at(parts, 1)}"
         state =
             case Process.whereis(id) do
                 nil ->

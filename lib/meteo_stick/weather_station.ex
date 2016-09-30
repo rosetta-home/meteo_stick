@@ -22,8 +22,8 @@ defmodule MeteoStick.WeatherStation do
     end
 
     def start_link(data) do
-        id = Enum.at(data, 1)
-        GenServer.start_link(__MODULE__, data, name: String.to_atom(id))
+        id = :"MeteoStation-#{Enum.at(data, 1)}"
+        GenServer.start_link(__MODULE__, [id, data], name: id)
     end
 
     def data(station, data) do
@@ -32,8 +32,8 @@ defmodule MeteoStick.WeatherStation do
         GenServer.call(station, {type, values})
     end
 
-    def init(data) do
-        {:ok, %State{id: Enum.at(data, 1)}}
+    def init([id, data]) do
+        {:ok, %State{id: id}}
     end
 
     def handle_call({"W", values}, _from, state) do
