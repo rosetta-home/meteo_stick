@@ -11,14 +11,30 @@ defmodule MeteoStick.Client do
         GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
     end
 
+    def open() do
+      tty = Application.get_env(:meteo_stick, :tty)
+      speed = Application.get_env(:meteo_stick, :speed)
+      Logger.debug "Starting Serial: #{tty}"
+      Serial.configure(MeteoStick.Serial, framing: {Serial.Framing.Line, separator: "\r\n"})
+      Serial.open(MeteoStick.Serial, tty, speed: speed, active: true)
+    end
+
+    def close() do
+      Serial.close(MeteoStick.Serial)
+    end
+
     def init(:ok) do
-        tty = Application.get_env(:meteo_stick, :tty)
-        speed = Application.get_env(:meteo_stick, :speed)
         {:ok, serial} = Serial.start_link([{:name, MeteoStick.Serial}])
-        Logger.debug "Starting Serial: #{tty}"
-        Serial.configure(MeteoStick.Serial, framing: {Serial.Framing.Line, separator: "\r\n"})
-        Serial.open(MeteoStick.Serial, tty, speed: speed, active: true)
+        open
+        Process.send_after(self, :bounce, 60000)
         {:ok, %State{}}
+    end
+
+    def handle_info(:bounce, state) do
+      close
+      open
+      Process.send_after(self, :bounce, 60000)
+      {:noreply, state}
     end
 
     def handle_info({:nerves_uart, _serial, {:partial, _data}}, state) do
