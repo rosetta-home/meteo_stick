@@ -28,62 +28,67 @@ defmodule MeteoStick.WeatherStation do
 
     def data(station, data) do
         type = Enum.at(data, 0)
-        values = Enum.drop(data, 1) |> Enum.map(&Float.parse/1)
-        GenServer.call(station, {type, values})
+        values = Enum.drop(data, 1) |> Enum.map(fn(d) ->
+            case Float.parse d do
+                :error -> 0.0
+                {num, remainder} -> num
+            end
+        end)
+        GenServer.cast(station, {type, values})
     end
 
     def init([id, data]) do
         {:ok, %State{id: id}}
     end
 
-    def handle_call({"W", values}, _from, state) do
+    def handle_cast({"W", values}, state) do
         [id, wind_speed, gust, wind_direction, rf_signal] = values
         Logger.debug("Wind Speed: #{inspect wind_speed}")
         Logger.debug("#{inspect values}")
-        state = %State{state | wind: %{state.wind | speed: wind_speed |> elem(0), direction: wind_direction |> elem(0), gust: gust |> elem(0)}}
+        state = %State{state | wind: %{state.wind | speed: wind_speed, direction: wind_direction, gust: gust}}
         GenEvent.notify(MeteoStick.Events, state)
-        {:reply, :ok, state}
+        {:noreply, state}
     end
 
-    def handle_call({"R", values}, _from, state) do
+    def handle_cast({"R", values}, state) do
         [id, tick, rf_signal] = values
         Logger.debug("Rain: #{inspect tick}")
-        state = %State{state | rain: tick |> elem(0)}
+        state = %State{state | rain: tick}
         GenEvent.notify(MeteoStick.Events, state)
-        {:reply, :ok, state}
+        {:noreply, state}
     end
 
-    def handle_call({"T", values}, _from, state) do
+    def handle_cast({"T", values}, state) do
         [id, temp_c, humidity, rf_signal] = values
         Logger.debug("Temperature: #{inspect temp_c}")
-        state = %State{state | outdoor_temperature: temp_c |> elem(0), humidity: humidity |> elem(0)}
+        state = %State{state | outdoor_temperature: temp_c, humidity: humidity}
         GenEvent.notify(MeteoStick.Events, state)
-        {:reply, :ok, state}
+        {:noreply, state}
     end
 
-    def handle_call({"U", values}, _from, state) do
+    def handle_cast({"U", values}, state) do
         [id, uv_index, rf_signal] = values
         Logger.debug("UV: #{inspect uv_index}")
-        state = %State{state | :uv => uv_index |> elem(0)}
+        state = %State{state | :uv => uv_index}
         GenEvent.notify(MeteoStick.Events, state)
-        {:reply, :ok, state}
+        {:noreply, state}
     end
 
-    def handle_call({"S", values}, _from, state) do
+    def handle_cast({"S", values}, state) do
         [id, solar_radiation, intensity, rf_signal] = values
         Logger.debug("Solar Radiation: #{inspect solar_radiation}")
         Logger.debug("#{inspect values}")
-        state = %State{state | :solar => %{state.solar | radiation: solar_radiation |> elem(0), intensity: intensity |> elem(0)}}
+        state = %State{state | :solar => %{state.solar | radiation: solar_radiation, intensity: intensity}}
         GenEvent.notify(MeteoStick.Events, state)
-        {:reply, :ok, state}
+        {:noreply, state}
     end
 
-    def handle_call({"B", values}, _from, state) do
+    def handle_cast({"B", values}, state) do
         [temp_c, pressure, good_packets] = values
         Logger.debug("Indoor Temperature: #{inspect temp_c}")
-        state = %State{state | indoor_temperature: temp_c |> elem(0), pressure: pressure |> elem(0)}
+        state = %State{state | indoor_temperature: temp_c, pressure: pressure}
         GenEvent.notify(MeteoStick.Events, state)
-        {:reply, :ok, state}
+        {:noreply, state}
     end
 
 end

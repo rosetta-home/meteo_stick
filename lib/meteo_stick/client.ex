@@ -26,7 +26,7 @@ defmodule MeteoStick.Client do
     def init(:ok) do
         {:ok, serial} = Serial.start_link([{:name, MeteoStick.Serial}])
         open
-        Process.send_after(self, :bounce, 60000)
+        #Process.send_after(self, :bounce, 60000)
         {:ok, %State{}}
     end
 
@@ -70,18 +70,40 @@ defmodule MeteoStick.Client do
         {:noreply, state}
     end
 
+    def valid_data(parts, id) do
+      case Process.whereis(id) do
+        nil ->
+          case parts |> Enum.at(0) do
+            "T" ->
+              case parts |> Enum.at(3) |> String.starts_with?("-") do
+                true -> :nogo
+                false -> :ok
+              end
+            _ -> :ok
+          end
+        _ -> :ok
+      end
+    end
+
     def handle_data(data, state) do
-        parts = String.split(data, " ")
-        id = :"MeteoStation-#{Enum.at(parts, 1)}"
-        state =
-            case Process.whereis(id) do
-                nil ->
-                    MeteoStick.StationSupervisor.start_station(parts)
-                    %State{state | :stations => [id | state.stations]}
-                _ -> state
-        end
-        MeteoStick.WeatherStation.data(id, parts)
-        state
+      Logger.debug data
+      parts = String.split(data, " ")
+      id = :"MeteoStation-#{Enum.at(parts, 1)}"
+      case valid_data(parts, id) do
+        :ok ->
+          state = case Process.whereis(id) do
+            nil ->
+                Logger.info "Starting Station: #{inspect parts}"
+                MeteoStick.StationSupervisor.start_station(parts)
+                %State{state | :stations => [id | state.stations]}
+            _ -> state
+          end
+          MeteoStick.WeatherStation.data(id, parts)
+          state
+        :nogo ->
+          Logger.error "Bad Data: #{inspect parts}"
+          state
+      end
     end
 
 end
