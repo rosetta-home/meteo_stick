@@ -4,7 +4,8 @@ defmodule MeteoStick.Client do
     alias Nerves.UART, as: Serial
 
     defmodule State do
-        defstruct stations: []
+        defstruct stations: [],
+          new_stations: %{}
     end
 
     def start_link() do
@@ -85,21 +86,39 @@ defmodule MeteoStick.Client do
       end
     end
 
+    def valid_station(id, state) do
+      ns = state.new_stations |> Map.get_and_update(id, fn(c_v) ->
+        case c_v do
+          nil -> {1, 1}
+          other when other < 5 -> {other, other+1}
+          _ -> {c_v, c_v}
+        end
+      end)
+      Logger.info "#{inspect ns}"
+      {%State{state | new_stations: ns |> elem(1)}, ns |> elem(0)}
+    end
+
     def handle_data(data, state) do
       Logger.debug data
       parts = String.split(data, " ")
       id = :"MeteoStation-#{Enum.at(parts, 1)}"
       case valid_data(parts, id) do
         :ok ->
-          state = case Process.whereis(id) do
-            nil ->
-                Logger.info "Starting Station: #{inspect parts}"
-                MeteoStick.StationSupervisor.start_station(parts)
-                %State{state | :stations => [id | state.stations]}
-            _ -> state
+          case valid_station(id, state) do
+            {state, other} when other > 4 ->
+              case Process.whereis(id) do
+                nil ->
+                    Logger.info "Starting Station: #{inspect parts}"
+                    MeteoStick.StationSupervisor.start_station(parts)
+                    %State{state | :stations => [id | state.stations]}
+                _ -> state
+              end
+              MeteoStick.WeatherStation.data(id, parts)
+              state
+            {state, other} ->
+              Logger.error "Not enough valid datapoints"
+              state
           end
-          MeteoStick.WeatherStation.data(id, parts)
-          state
         :nogo ->
           Logger.error "Bad Data: #{inspect parts}"
           state
