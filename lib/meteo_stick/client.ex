@@ -94,7 +94,6 @@ defmodule MeteoStick.Client do
           _ -> {c_v, c_v}
         end
       end)
-      Logger.info "#{inspect ns}"
       {%State{state | new_stations: ns |> elem(1)}, ns |> elem(0)}
     end
 
