@@ -86,6 +86,7 @@ defmodule MeteoStick.WeatherStation do
     def handle_cast({"B", values}, state) do
         [temp_c, pressure, good_packets] = values
         Logger.debug("Indoor Temperature: #{inspect temp_c}")
+        Logger.debug("Pressure: #{inspect pressure}")
         state = %State{state | indoor_temperature: temp_c, pressure: pressure}
         GenEvent.notify(MeteoStick.Events, state)
         {:noreply, state}

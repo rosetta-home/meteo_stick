@@ -105,7 +105,7 @@ defmodule MeteoStick.Client do
         :ok ->
           case valid_station(id, state) do
             {state, other} when other > 4 ->
-              case Process.whereis(id) do
+              state = case Process.whereis(id) do
                 nil ->
                     Logger.info "Starting Station: #{inspect parts}"
                     MeteoStick.StationSupervisor.start_station(parts)
