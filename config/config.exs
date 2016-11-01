@@ -4,7 +4,7 @@ use Mix.Config
 
 config :meteo_stick,
     speed: 115200,
-    tty: "/dev/ttyUSB0"
+    tty: "/dev/ttyUSB23423423"
 
 # This configuration is loaded before any dependency and is restricted
 # to this project. If another project depends on this project, this

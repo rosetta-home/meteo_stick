@@ -3,7 +3,7 @@ defmodule MeteoStick.Mixfile do
 
   def project do
     [app: :meteo_stick,
-     version: "0.1.9",
+     version: "0.2.0",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -17,7 +17,7 @@ defmodule MeteoStick.Mixfile do
       applications: [:logger, :nerves_uart],
       mod: {MeteoStick, []},
       env: [speed: 115200,
-          tty: "/dev/ttyUSB0",
+          tty: "/dev/ttyUSB3453453",
       ]
     ]
   end
