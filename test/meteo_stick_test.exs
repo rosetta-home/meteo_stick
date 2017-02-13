@@ -8,6 +8,6 @@ defmodule MeteoStickTest do
 
   test "events" do
       MeteoStick.EventManager.add_handler(MeteoStick.Handler)
-      assert_receive %MeteoStick.WeatherStation.State{}, 30_000
+      assert_receive %MeteoStick.WeatherStation.State{}, 140_000
   end
 end
