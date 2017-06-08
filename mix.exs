@@ -3,7 +3,7 @@ defmodule MeteoStick.Mixfile do
 
   def project do
     [app: :meteo_stick,
-     version: "0.2.0",
+     version: "0.2.3",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -41,7 +41,7 @@ defmodule MeteoStick.Mixfile do
 
   defp deps do
     [
-      {:nerves_uart, "~> 0.1.1"},
+      {:nerves_uart, "~> 0.1.2"},
       {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
