@@ -67,6 +67,9 @@ defmodule MeteoStick.Client do
     {:noreply, state}
   end
 
+  def handle_info({:clear_station, id}, state) do
+    {:noreply, %State{state | stations: state.stations |> Map.delete(id)}}
+  end
 
   def handle_data(data, state) do
     Logger.debug data
@@ -87,6 +90,7 @@ defmodule MeteoStick.Client do
           stations |> Map.delete(id)
       _ -> stations
     end
+    Process.send_after(self(), {:clear_station, id}, 1000)
     %State{state | stations: stations}
   end
 
