@@ -4,8 +4,7 @@ defmodule MeteoStick.Client do
   alias Nerves.UART, as: Serial
 
   defmodule State do
-    defstruct stations: [],
-      new_stations: %{}
+    defstruct stations: %{}
   end
 
   def start_link() do
@@ -35,10 +34,15 @@ defmodule MeteoStick.Client do
   end
 
   def handle_info({:nerves_uart, _serial, <<"B ", rest::binary>> = data}, state) do
-    parts = String.split(data, " ")
-    Enum.each(state.stations, fn(s) ->
-      MeteoStick.WeatherStation.data(s, parts)
-    end)
+    Logger.debug data
+    case data |> String.ends_with?("%") do
+      true ->
+        parts = String.split(data, " ")
+        MeteoStick.StationSupervisor |> Supervisor.which_children |> Enum.each( fn {_i, pid, _t, _m} ->
+          pid |> MeteoStick.WeatherStation.data(parts)
+        end)
+      false -> :ok
+    end
     {:noreply, state}
   end
 
@@ -67,15 +71,32 @@ defmodule MeteoStick.Client do
   def handle_data(data, state) do
     Logger.debug data
     parts = String.split(data, " ")
+    type = parts |> Enum.at(0)
     id = :"MeteoStation-#{Enum.at(parts, 1)}"
-    state = case Process.whereis(id) do
-      nil ->
-        Logger.info "Starting Station: #{inspect parts}"
-        MeteoStick.StationSupervisor.start_station(parts)
-        %State{state | :stations => [id | state.stations]}
-        _ -> state
+    {_v, stations} =
+      state.stations |> Map.get_and_update(id, fn val ->
+        case val do
+          nil -> {val, %{types: [type], data: [parts]}}
+          other -> {other, %{other | types: [type | other.types], data: [parts | other.data]}}
+        end
+      end)
+    stations =
+      case ["W", "R", "T", "U", "S"] -- stations[id][:types] do
+        [] ->
+          stations[id][:data] |> Enum.each(fn data -> handle_station(id, data) end)
+          stations |> Map.delete(id)
+      _ -> stations
     end
-    MeteoStick.WeatherStation.data(id, parts)
-    state
+    %State{state | stations: stations}
+  end
+
+  def handle_station(id, data) do
+    case Process.whereis(id) do
+      nil ->
+        Logger.info "Starting Station: #{inspect data}"
+        MeteoStick.StationSupervisor.start_station(data)
+        _ -> :ok
+    end
+    MeteoStick.WeatherStation.data(id, data)
   end
 end
