@@ -68,7 +68,21 @@ defmodule MeteoStick.Client do
   end
 
   def handle_info({:clear_station, id}, state) do
-    {:noreply, %State{state | stations: state.stations |> Map.delete(id)}}
+    Logger.debug("Clearing Junk Station: #{id}")
+    {_val, stations} =
+      state.stations |> Map.get_and_update(id, fn val ->
+        {val, %{val | types: [], data: []}}
+      end)
+    {:noreply, %State{state | stations: stations}}
+  end
+
+  def handle_info({:reset_data_count, id}, state) do
+    Logger.debug("Resetting Data Count: #{id}")
+    {_val, stations} =
+      state.stations |> Map.get_and_update(id, fn val ->
+        {val, %{val | types: [], data: [], count: 0}}
+      end)
+    {:noreply, %State{state | stations: stations}}
   end
 
   def handle_data(data, state) do
@@ -79,15 +93,39 @@ defmodule MeteoStick.Client do
     {_v, stations} =
       state.stations |> Map.get_and_update(id, fn val ->
         case val do
-          nil -> {val, %{types: [type], data: [parts]}}
+          nil -> {val, %{types: [type], data: [parts], count: 0, reset: nil}}
           other -> {other, %{other | types: [type | other.types], data: [parts | other.data]}}
         end
       end)
     stations =
       case ["W", "R", "T", "U", "S"] -- stations[id][:types] do
         [] ->
-          stations[id][:data] |> Enum.each(fn data -> handle_station(id, data) end)
-          stations |> Map.delete(id)
+          Logger.debug("#{inspect stations[id]}")
+          {_v, stations} = Map.get_and_update(stations, id, fn val ->
+            case val[:reset] do
+              nil -> {val, %{val | count: val[:count] + 1, reset: Process.send_after(self(), {:reset_data_count, id}, 160_000)}}
+              :done -> {val, val}
+              _ -> {val, %{val | count: val[:count] + 1}}
+            end
+          end)
+          case stations[id][:count] > 4 do
+            true ->
+              stations[id][:data] |> Enum.each(fn data -> handle_station(id, data) end)
+              case stations[id][:reset] do
+                :done -> stations
+                nil -> stations
+                _ ->
+                  Process.cancel_timer(stations[id][:reset])
+                  {_val, stations} =
+                    stations |> Map.get_and_update(id, fn val ->
+                      {val, %{val | types: [], data: [], reset: :done}}
+                    end)
+                  stations
+              end
+            false ->
+              Logger.debug("Station #{id}: #{stations[id][:count]} complete data cycles")
+              stations
+          end
       _ -> stations
     end
     Process.send_after(self(), {:clear_station, id}, 1000)
